@@ -569,6 +569,11 @@
                       "limit": {
                         "description": "Limits the total number of reranked documents returned.",
                         "$ref": "#/components/schemas/RerankLimit"
+                      },
+                      "offset": {
+                        "description": "Number of reranked documents to skip before returning results. Requires `rerank_by` and `limit`.",
+                        "type": "integer",
+                        "minimum": 0
                       }
                     }
                   }
@@ -1105,6 +1110,11 @@
           "top_k": {
             "description": "The number of results to return.",
             "type": "integer"
+          },
+          "offset": {
+            "description": "Number of documents to skip before returning results. Supported only in v2 queries with an explicit `rank_by` and `top_k` or `limit`.\n",
+            "type": "integer",
+            "minimum": 0
           },
           "filters": {
             "description": "Exact filters for attributes to refine search results for. Think of it as a SQL WHERE clause.\n",

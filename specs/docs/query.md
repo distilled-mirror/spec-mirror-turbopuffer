@@ -163,6 +163,15 @@ Alias for [`limit.total`](#param-limit).
 
 ---
 
+**offset** number
+default: 0
+
+Number of documents to skip before returning results. Not supported for aggregation queries.
+
+  `limit + offset` must be less than the `limit.total` maximum of 10,000.
+
+---
+
 **filters** array
 optional
 
@@ -4351,12 +4360,10 @@ operation changes the top hits of the query after the first page is retrieved.
 }
 ```
 
-If you're letting users jump to arbitrary page numbers, pass a larger `limit`
-value and ignore hits which belong to previous pages. This is what other
-searches engines do internally when you pass an offset, which we have not
-exposed yet. In case your users use pagination heavily, you may want to request
-a large number of hits in the first place, cache them, and implement pagination
-on the client side.
+If you're letting users jump to arbitrary page numbers, use `offset` with
+`limit` to skip preceding hits. In case your users use pagination heavily, you
+may want to request a large number of hits in the first place, cache them, and
+implement pagination on the client side.
 
 When [Ordering by Attributes](#ordering-by-attributes), you can page through
 results by advancing a filter on the order attribute. For example, to paginate

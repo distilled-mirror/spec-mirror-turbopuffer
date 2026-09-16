@@ -945,6 +945,7 @@ The data type of the attribute. Supported types:
 - `uuid`: 128-bit UUID
 - `datetime`: Date and time
 - `bool`: Boolean
+- `bytes`: Arbitrary bytes
 - `[]string`: Array of strings
 - `[]int`: Array of signed integers
 - `[]uint`: Array of unsigned integers
@@ -961,8 +962,12 @@ The data type of the attribute. Supported types:
 All attributes are nullable, except for `id`.
 
 `string`, `int` and `bool` types and their array variants can be inferred from
-the write payload. Other types, such as `uint` or `uuid` must be set explicitly in the schema. See [UUID
+the write payload. Other types, such as `uint`, `uuid`, or `bytes` must be set explicitly in the schema. See [UUID
 values](/docs/write#configuring-the-schema) for an example.
+
+`bytes` holds arbitrary binary data. Subject to the maximum attribute
+size limit of  per value and does not support indexing or filtering of any kind (automatically receives the [non-filterable attribute discount](/docs/write#param-filterable)).
+Values are passed and returned as base64-encoded strings, but stored and billed at their decoded size.
 
 `datetime` values should be provided as an ISO 8601 formatted string with a
 mandatory date and optional time and time zone. Internally, these values are

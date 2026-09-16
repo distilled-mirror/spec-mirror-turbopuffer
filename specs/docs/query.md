@@ -350,11 +350,25 @@ required unless rank_by is set
   * `["Count"]`: counts the number of documents.
   * `["Sum", "attribute_name"]`: sums the values of the specified scalar numeric attribute (supports `int`, `uint`, `float`)
 
-Example:
+  Up to 8 aggregate functions can be computed in a single query. The results are
+  keyed by the labels you provide.
+
+Example (single aggregation):
 ```json
 {
   "aggregate_by": {
     "my_count": ["Count"]
+  }
+}
+```
+
+Example (multiple aggregations):
+```json
+{
+  "aggregate_by": {
+    "my_count": ["Count"],
+    "my_sum": ["Sum", "cool_score"],
+    "my_other_sum": ["Sum", "other_score"]
   }
 }
 ```
@@ -1484,173 +1498,6 @@ You can aggregate attribute values across all documents in the namespace that
 match the query's filters using the [aggregate_by
 parameter](#param-aggregate_by).
 
-For example, to count the number of documents in a namespace:
-
-<!-- multilang -->
-```bash
-# choose best region: https://turbopuffer.com/docs/regions
-curl https://gcp-us-central1.turbopuffer.com/v2/namespaces/query-count-example-curl/query \
-  -X POST --fail-with-body \
-  -H "Authorization: Bearer $TURBOPUFFER_API_KEY" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "aggregate_by": {
-      "my_cool_count": ["Count"]
-    },
-    "filters": [
-      "cool_score",
-      "Gt",
-      7
-    ]
-  }'
-```
-```python
-import turbopuffer
-
-tpuf = turbopuffer.Turbopuffer(
-    region='gcp-us-central1', # choose best region: https://turbopuffer.com/docs/regions
-)
-
-ns = tpuf.namespace(f'query-count-example-py')
-
-result = ns.query(
-    aggregate_by={'my_cool_count': ('Count',)},
-    filters=('cool_score', 'Gt', 7),
-)
-print(result.aggregations['my_cool_count'])
-```
-```typescript
-import { Turbopuffer } from "@turbopuffer/turbopuffer";
-
-const tpuf = new Turbopuffer({
-  region: "gcp-us-central1", // choose best region: https://turbopuffer.com/docs/regions
-});
-
-const ns = tpuf.namespace(`query-count-example-ts`);
-
-const result = await ns.query({
-  aggregate_by: { my_cool_count: ["Count"] },
-  filters: [
-    "cool_score",
-    "Gt",
-    7,
-  ],
-});
-console.log(result.aggregations!.my_cool_count);
-```
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"os"
-
-	"github.com/turbopuffer/turbopuffer-go/v2"
-	"github.com/turbopuffer/turbopuffer-go/v2/option"
-)
-
-func main() {
-	ctx := context.Background()
-	tpuf := turbopuffer.NewClient(
-		option.WithRegion("gcp-us-central1"), // choose best region: https://turbopuffer.com/docs/regions
-	)
-
-	ns := tpuf.Namespace("query-count-example-go")
-	result, err := ns.Query(
-		ctx,
-		turbopuffer.NamespaceQueryParams{
-			AggregateBy: map[string]turbopuffer.AggregateBy{
-				"my_cool_count": turbopuffer.NewAggregateByCount(),
-			},
-			Filters: turbopuffer.NewFilterGt("cool_score", 7),
-		},
-	)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(result.Aggregations["my_cool_count"])
-}
-```
-```java
-package com.turbopuffer.docs;
-
-import com.turbopuffer.client.okhttp.*;
-import com.turbopuffer.models.namespaces.*;
-import java.util.*;
-
-public class QueryCount {
-
-  public static void main(String[] args) {
-    var tpuf = TurbopufferOkHttpClient.builder()
-      .fromEnv()
-      .region("gcp-us-central1") // choose best region: https://turbopuffer.com/docs/regions
-      .build();
-
-    var ns = tpuf.namespace("query-count-example-java");
-
-    var queryResult = ns.query(
-      NamespaceQueryParams.builder()
-        .aggregateBy(Map.of("my_cool_count", AggregateBy.count("id")))
-        .filters(Filter.gt("cool_score", 7))
-        .build()
-    );
-
-    var aggregations = queryResult.aggregations().get();
-    System.out.println(aggregations.get("my_cool_count"));
-  }
-}
-```
-```cs
-// dotnet add package Turbopuffer
-using System;
-using System.Collections.Generic;
-using Turbopuffer;
-using Turbopuffer.Models.Namespaces;
-
-using var tpuf = new TurbopufferClient
-{
-    // Pick the right region: https://turbopuffer.com/docs/regions
-    Region = "gcp-us-central1",
-};
-
-var ns = tpuf.Namespace("query-count-example-csharp");
-
-var queryResult = await ns.Query(
-    new NamespaceQueryParams
-    {
-        AggregateBy = new Dictionary<string, AggregateBy> { ["my_cool_count"] = AggregateBy.Count() },
-        Filters = Filter.Gt("cool_score", 7),
-    }
-);
-
-var aggregations = queryResult.GetAggregations();
-Console.WriteLine(aggregations["my_cool_count"]);
-```
-```ruby
-require "turbopuffer"
-
-tpuf = Turbopuffer::Client.new(
-  region: "gcp-us-central1", # choose best region: https://turbopuffer.com/docs/regions
-)
-
-ns = tpuf.namespace("query-count-example-rb")
-
-result = ns.query(
-  aggregate_by: { my_cool_count: ["Count"] },
-  filters: [
-    "cool_score",
-    "Gt",
-    7,
-  ],
-)
-puts result.aggregations[:my_cool_count]
-```
-<!-- /multilang -->
-
-You can use `Sum` to sum numeric attribute values across all documents that match
-a particular filter:
-
 <!-- multilang -->
 ```bash
 # choose best region: https://turbopuffer.com/docs/regions
@@ -1660,7 +1507,8 @@ curl https://gcp-us-central1.turbopuffer.com/v2/namespaces/query-sum-example-cur
   -H 'Content-Type: application/json' \
   -d '{
     "aggregate_by": {
-      "my_cool_sum": ["Sum", "cool_score"]
+      "my_cool_sum": ["Sum", "cool_score"],
+      "my_cool_count": ["Count"]
     },
     "filters": [
       "id",
@@ -1679,10 +1527,13 @@ tpuf = turbopuffer.Turbopuffer(
 ns = tpuf.namespace(f'query-sum-example-py')
 
 result = ns.query(
-    aggregate_by={'my_cool_sum': ('Sum', 'cool_score')},
+    aggregate_by={
+        'my_cool_sum': ('Sum', 'cool_score'),
+        'my_cool_count': ('Count',),
+    },
     filters=('id', 'Gte', 2),
 )
-print(result.aggregations['my_cool_sum'])
+print(result.aggregations['my_cool_sum'], result.aggregations['my_cool_count'])
 ```
 ```typescript
 import { Turbopuffer } from "@turbopuffer/turbopuffer";
@@ -1694,14 +1545,17 @@ const tpuf = new Turbopuffer({
 const ns = tpuf.namespace(`query-sum-example-ts`);
 
 const result = await ns.query({
-  aggregate_by: { my_cool_sum: ["Sum", "cool_score"] },
+  aggregate_by: {
+    my_cool_sum: ["Sum", "cool_score"],
+    my_cool_count: ["Count"],
+  },
   filters: [
     "id",
     "Gte",
     2,
   ],
 });
-console.log(result.aggregations!.my_cool_sum);
+console.log(result.aggregations!.my_cool_sum, result.aggregations!.my_cool_count);
 ```
 ```go
 package main
@@ -1726,7 +1580,8 @@ func main() {
 		ctx,
 		turbopuffer.NamespaceQueryParams{
 			AggregateBy: map[string]turbopuffer.AggregateBy{
-				"my_cool_sum": turbopuffer.NewAggregateBySum("cool_score"),
+				"my_cool_sum":   turbopuffer.NewAggregateBySum("cool_score"),
+				"my_cool_count": turbopuffer.NewAggregateByCount(),
 			},
 			Filters: turbopuffer.NewFilterGte("id", 2),
 		},
@@ -1734,7 +1589,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(result.Aggregations["my_cool_sum"])
+	fmt.Println(result.Aggregations["my_cool_sum"], result.Aggregations["my_cool_count"])
 }
 ```
 ```java
@@ -1756,13 +1611,21 @@ public class QuerySum {
 
     var queryResult = ns.query(
       NamespaceQueryParams.builder()
-        .aggregateBy(Map.of("my_cool_sum", AggregateBy.sum("cool_score")))
+        .aggregateBy(
+          Map.of(
+            "my_cool_sum",
+            AggregateBy.sum("cool_score"),
+            "my_cool_count",
+            AggregateBy.count("id")
+          )
+        )
         .filters(Filter.gte("id", 2))
         .build()
     );
 
     var aggregations = queryResult.aggregations().get();
     System.out.println(aggregations.get("my_cool_sum"));
+    System.out.println(aggregations.get("my_cool_count"));
   }
 }
 ```
@@ -1784,13 +1647,18 @@ var ns = tpuf.Namespace("query-sum-example-csharp");
 var queryResult = await ns.Query(
     new NamespaceQueryParams
     {
-        AggregateBy = new Dictionary<string, AggregateBy> { ["my_cool_sum"] = AggregateBy.Sum("cool_score") },
+        AggregateBy = new Dictionary<string, AggregateBy>
+        {
+            ["my_cool_sum"] = AggregateBy.Sum("cool_score"),
+            ["my_cool_count"] = AggregateBy.Count(),
+        },
         Filters = Filter.Gte("id", 2),
     }
 );
 
 var aggregations = queryResult.GetAggregations();
 Console.WriteLine(aggregations["my_cool_sum"]);
+Console.WriteLine(aggregations["my_cool_count"]);
 ```
 ```ruby
 require "turbopuffer"
@@ -1802,7 +1670,10 @@ tpuf = Turbopuffer::Client.new(
 ns = tpuf.namespace("query-sum-example-rb")
 
 result = ns.query(
-  aggregate_by: { my_cool_sum: ["Sum", "cool_score"] },
+  aggregate_by: {
+    my_cool_sum: ["Sum", "cool_score"],
+    my_cool_count: ["Count"],
+  },
   filters: [
     "id",
     "Gte",
@@ -1810,8 +1681,11 @@ result = ns.query(
   ],
 )
 puts result.aggregations[:my_cool_sum]
+puts result.aggregations[:my_cool_count]
 ```
 <!-- /multilang -->
+
+Up to 8 aggregations can be computed in a single query.
 
 ### Group by
 

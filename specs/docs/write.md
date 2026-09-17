@@ -482,9 +482,6 @@ Example:
 }
 ```
 
-Sharding is in early access and must be enabled for your organization.
-[Contact us](/contact) for access.
-
 ---
 
 **encryption** object

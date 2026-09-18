@@ -380,6 +380,11 @@ By default, the destination also inherits the source's
 override it. For example, to change shard count or to shard a previously
 unsharded source. See the [sharding guide](/docs/sharding#configuration).
 
+It is safe to copy a namespace while it is actively indexing a backlog. The copy
+includes committed writes and indexing progress at the time it starts, and the
+destination will continue indexing from the same point. For example, you can
+copy into a namespace with more shards to increase indexing throughput.
+
 The destination also inherits the source namespace's
 [`read_only`](/docs/metadata#change-metadata) setting. The setting can be changed
 independently on the destination after the copy completes.

@@ -593,7 +593,7 @@ The billable resources consumed by the write. The object contains the following 
 
 * `billable_logical_bytes_written` (uint): the number of logical bytes written to the namespace. Includes discounts for unfiltered attributes, but *not* the batch write discount or the `copy_from_namespace` discount.
 * `query` (object, optional): query billing information when the write involves a query-like operation (for a conditional write, `patch_by_filter`, `delete_by_filter`, or a cross-region `copy_from_namespace`):
-  * `billable_logical_bytes_queried` (uint): the number of logical bytes processed by queries
+  * `billable_logical_bytes_queried` (uint): the number of logical bytes processed by queries, after the [1.28 GB minimum](/pricing) and the marginal discounts for large namespaces
   * `billable_logical_bytes_returned` (uint): the number of logical bytes returned by queries
 
 **performance** object

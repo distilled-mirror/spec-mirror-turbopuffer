@@ -567,7 +567,7 @@ Example:
 
 The billable resources consumed by the query. The object contains the following fields:
 
-* `billable_logical_bytes_queried` (uint): the number of logical bytes processed by the query
+* `billable_logical_bytes_queried` (uint): the number of logical bytes processed by the query, after the [1.28 GB minimum](/pricing) and the marginal discounts for large namespaces
 * `billable_logical_bytes_returned` (uint): the number of logical bytes returned by the query
 
 **performance** object

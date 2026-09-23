@@ -529,7 +529,7 @@ These thresholds are measured per namespace, not per shard. A sharded namespace
 has a single write-ahead log, and the limits are counted across that whole log,
 starting from the indexing position of whichever shard is furthest behind.
 
-Only takes effect for upserts and delete-by-id. Ignored for patch-by-id, patch-by-filter, delete-by-filter, and [conditional writes](#conditional-writes), since those operations require a strongly consistent read of existing rows.
+Only supported for upserts and delete-by-id. Not supported for patch-by-id, patch-by-filter, delete-by-filter, or [conditional writes](#conditional-writes), since those operations require a strongly consistent read of existing rows.
 
 Indexing progress can be tracked through the `unindexed_bytes` field in the [metadata endpoint](/docs/metadata#responsefield-index).
 
@@ -3222,7 +3222,7 @@ end
 
 To copy all documents from another namespace into a new, empty namespace, use
 [`copy_from_namespace`](#param-copy_from_namespace). The client libraries expose a
-`copy_from()` convenience method that wraps this parameter.
+`copy_from()` / `copyFrom()` convenience method that wraps this parameter.
 
 Pass the optional `source_region` and `source_api_key` to copy across regions,
 organizations, or cloud providers.
@@ -3375,6 +3375,262 @@ destination.copy_from(
 
 For same-region copies, consider using the faster and cheaper
 [`branch_from_namespace`](/docs/branching) operation instead.
+
+#### Monitoring copy progress
+
+To monitor the progress of a copy while it runs, start an asynchronous copy operation and poll its status.
+
+The client libraries expose `start_copy_from()` / `startCopyFrom()` namespace methods that start a copy operation and return a token.
+Pass the token to `poll_copy_from()` / `pollCopyFrom()` to obtain the running operation's status and the final result.
+While the status is "running", poll responses contain a `progress` field that helps gauge whether the copy is proceeding as expected.
+
+If you are using the HTTP API, send an [asynchronous `copy_from_namespace` request](/docs/api-overview#asynchronous-requests) instead.
+The operation polling responses contain a `progress` field as well.
+
+<!-- multilang -->
+```bash
+# choose best region: https://turbopuffer.com/docs/regions
+curl https://gcp-us-central1.turbopuffer.com/v2/namespaces/write-copy-progress-dest-curl \
+  -X POST --fail-with-body --include \
+  -H "Authorization: Bearer $TURBOPUFFER_API_KEY" \
+  -H 'Prefer: respond-async' \
+  -H 'Content-Type: application/json' \
+  -d '{"copy_from_namespace": "write-copy-progress-source-curl-'"$NONCE"'"}'
+# Response:
+#   HTTP/1.1 202 Accepted
+#   Preference-Applied: respond-async
+#   Location: /v1/namespaces/write-copy-progress-dest-curl/operations/tpuf-abc123
+#
+#   {"token": "tpuf-abc123"}
+
+curl https://gcp-us-central1.turbopuffer.com/v1/namespaces/write-copy-progress-dest-curl/operations/tpuf-abc123 \
+  -X GET --fail-with-body \
+  -H "Authorization: Bearer $TURBOPUFFER_API_KEY"
+# Response (while running):
+#   {
+#     "status": "running",
+#     "progress": "index: copied 104857600 bytes"
+#   }
+# Response (finished successfully):
+#   {
+#     "status": "finished",
+#     "result": {
+#       "success": {"status": "OK", "message": "namespace cloned successfully"}
+#     }
+#   }
+# Response (operation failed):
+#   {
+#     "status": "finished",
+#     "result": {
+#       "error": {
+#         "status_code": 400,
+#         "detail": {"status": "error", "error": "destination namespace already exists"}
+#       }
+#     }
+#   }
+```
+```python
+import time
+import turbopuffer
+
+tpuf = turbopuffer.Turbopuffer(
+    region='gcp-us-central1', # choose best region: https://turbopuffer.com/docs/regions
+)
+
+destination = tpuf.namespace(f'write-copy-progress-dest-py')
+copy = destination.start_copy_from(
+    source_namespace=f'write-copy-progress-source-py',
+)
+
+while True:
+    operation = destination.poll_copy_from(copy.token)
+    if operation.status == 'running':
+        if operation.progress:
+            print("progress:", operation.progress)
+    else:
+        print("result:", operation.result)
+        break
+    time.sleep(1)
+```
+```typescript
+import { Turbopuffer } from "@turbopuffer/turbopuffer";
+
+const tpuf = new Turbopuffer({
+  region: "gcp-us-central1", // choose best region: https://turbopuffer.com/docs/regions
+});
+
+const destination = tpuf.namespace(`write-copy-progress-dest-ts`);
+const copy = await destination.startCopyFrom({
+  source_namespace: `write-copy-progress-source-ts`,
+});
+
+while (true) {
+  const operation = await destination.pollCopyFrom(copy.token);
+  if (operation.status === "running") {
+    if (operation.progress) {
+      console.log("progress:", operation.progress);
+    }
+  } else {
+    console.log("result:", operation.result);
+    break;
+  }
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+}
+```
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/turbopuffer/turbopuffer-go/v2"
+	"github.com/turbopuffer/turbopuffer-go/v2/option"
+)
+
+func main() {
+	ctx := context.Background()
+	tpuf := turbopuffer.NewClient(
+		option.WithRegion("gcp-us-central1"), // choose best region: https://turbopuffer.com/docs/regions
+	)
+
+	destination := tpuf.Namespace("write-copy-progress-dest-go")
+	copy, err := destination.StartCopyFrom(ctx, turbopuffer.NamespaceStartCopyFromParams{
+		SourceNamespace: "write-copy-progress-source-go",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	for {
+		operation, err := destination.PollCopyFrom(ctx, copy.Token, turbopuffer.NamespacePollCopyFromParams{})
+		if err != nil {
+			panic(err)
+		}
+		if operation.Status == "running" {
+			if operation.Progress != "" {
+				fmt.Println("progress:", operation.Progress)
+			}
+		} else {
+			fmt.Println("result:", operation.Result)
+			break
+		}
+		time.Sleep(time.Second)
+	}
+}
+```
+```java
+package com.turbopuffer.docs;
+
+import com.turbopuffer.client.okhttp.*;
+import com.turbopuffer.models.namespaces.*;
+
+public class WriteCopyFromProgress {
+
+  public static void main(String[] args) throws InterruptedException {
+    var tpuf = TurbopufferOkHttpClient.builder()
+      .fromEnv()
+      .region("gcp-us-central1") // choose best region: https://turbopuffer.com/docs/regions
+      .build();
+
+    var destination = tpuf.namespace("write-copy-progress-dest-java");
+    var copy = destination.startCopyFrom(
+      NamespaceStartCopyFromParams.builder()
+        .sourceNamespace("write-copy-progress-source-java")
+        .build()
+    );
+
+    // Poll until the operation is finished.
+    while (true) {
+      var operation = destination.pollCopyFrom(copy.token());
+      if (operation.isRunning()) {
+        var progress = operation.asRunning().progress();
+        if (progress.isPresent()) {
+          System.out.println("progress: " + progress.get());
+        }
+      } else {
+        System.out.println("result: " + operation.asFinished().result());
+        break;
+      }
+      Thread.sleep(1000);
+    }
+  }
+}
+```
+```cs
+// dotnet add package Turbopuffer
+using System;
+using System.Threading.Tasks;
+using Turbopuffer;
+using Turbopuffer.Models.Namespaces;
+
+using var tpuf = new TurbopufferClient
+{
+    Region = "gcp-us-central1", // choose best region: https://turbopuffer.com/docs/regions
+};
+
+var destination = tpuf.Namespace("write-copy-progress-dest-csharp");
+var copy = await destination.StartCopyFrom(
+    new NamespaceStartCopyFromParams
+    {
+        SourceNamespace = "write-copy-progress-source-csharp",
+    }
+);
+
+// Poll until the operation is finished.
+while (true)
+{
+    var operation = await destination.PollCopyFrom(copy.Token);
+    var isFinished = operation.Match(
+        running: running =>
+        {
+            if (running.Progress is not null)
+            {
+                Console.WriteLine($"progress: {running.Progress}");
+            }
+            return false;
+        },
+        finished: finished =>
+        {
+            Console.WriteLine($"result: {finished.Result}");
+            return true;
+        }
+    );
+    if (isFinished)
+    {
+        break;
+    }
+    await Task.Delay(1000);
+}
+```
+```ruby
+require "turbopuffer"
+
+tpuf = Turbopuffer::Client.new(
+  region: "gcp-us-central1", # choose best region: https://turbopuffer.com/docs/regions
+)
+
+destination = tpuf.namespace("write-copy-progress-dest-rb")
+copy = destination.start_copy_from(
+  source_namespace: "write-copy-progress-source-rb",
+)
+
+loop do
+  operation = destination.poll_copy_from(copy.token)
+  if operation.status == :running
+    puts "progress: #{operation.progress}" if operation.progress
+  else
+    puts "result: #{operation.result}"
+    break
+  end
+  sleep 1
+end
+```
+<!-- /multilang -->
+
+Note that the `progress` field is optional and the format of the progress messages is not guaranteed to be stable.
+To detect completion of a copy operation, inspect the `status` field instead.
 
 
 ---

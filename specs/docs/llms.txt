@@ -5,7 +5,7 @@
 > and extremely scalable. This is the complete documentation for
 > the turbopuffer API and platform.
 
-> In production: 1T+ documents, 25k+ queries/s, 10M+ writes/s.
+> In production: 1T+ documents, 100k+ queries/s, 10M+ writes/s.
 
 - [Introduction](https://turbopuffer.com/docs/index.md): What turbopuffer is and how it works
 - [Quickstart](https://turbopuffer.com/docs/quickstart.md): Get started with the turbopuffer API using code examples

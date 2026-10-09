@@ -531,7 +531,7 @@ starting from the indexing position of whichever shard is furthest behind.
 
 Only supported for upserts and delete-by-id. Not supported for patch-by-id, patch-by-filter, delete-by-filter, or [conditional writes](#conditional-writes), since those operations require a strongly consistent read of existing rows.
 
-Indexing progress can be tracked through the `unindexed_bytes` field in the [metadata endpoint](/docs/metadata#responsefield-index).
+Indexing progress can be tracked through the `unindexed_bytes` and `unindexed_rows` fields in the [metadata endpoint](/docs/metadata#responsefield-index).
 
 Note that while data is being indexed, the following will not be updated:
 - [`approx_row_count`](/docs/metadata#responsefield-approx_row_count) and [`approx_logical_bytes`](/docs/metadata#responsefield-approx_logical_bytes) in the metadata endpoint
@@ -601,6 +601,8 @@ The billable resources consumed by the write. The object contains the following 
 The performance metrics for the write. The object currently contains the following fields, but these fields may change name, type, or meaning in the future:
 
 * `server_total_ms` (uint): request time measured on the server, in milliseconds
+* `embedding_tokens` (uint): the number of tokens embedded, only set when using a [native embedding model](/docs/embedding)
+* `embedding_ms` (uint): time spent embedding text, in milliseconds, only set when using a [native embedding model](/docs/embedding)
 
 ## Attributes
 

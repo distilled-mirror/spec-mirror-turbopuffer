@@ -581,6 +581,8 @@ The performance metrics for the query. The object currently contains the followi
 * `exhaustive_search_count` (uint): the number of unindexed documents processed by the query
 * `approx_namespace_size` (uint): the approximate number of documents in the namespace
 * `last_included_write_at` (string): the timestamp of the last write operation that the query observed
+* `embedding_tokens` (uint): the number of tokens embedded, only set when using a [native embedding model](/docs/embedding)
+* `embedding_ms` (uint): time spent embedding text, in milliseconds, only set when using a [native embedding model](/docs/embedding)
 
 [Contact the turbopuffer team](/contact) if you need help interpreting these metrics.
 

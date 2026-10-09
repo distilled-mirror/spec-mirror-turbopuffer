@@ -107,6 +107,14 @@ following fields:
 
   Only present when `status` is `updating`.
 
+- `unindexed_rows` (integer):
+
+  The number of rows in the [write-ahead log](/docs/architecture) that have not
+  yet been indexed. Note that unindexed data is still searched by queries (see
+  [consistency](/docs/query#param-consistency) for details).
+
+  Only present when `status` is `updating`.
+
 ---
 
 **pinning** object
@@ -215,7 +223,8 @@ curl https://gcp-us-central1.turbopuffer.com/v1/namespaces/metadata-curl/metadat
 #   },
 #   "index": {
 #     "status": "updating",
-#     "unindexed_bytes": 128
+#     "unindexed_bytes": 128,
+#     "unindexed_rows": 2
 #   }
 # }
 ```

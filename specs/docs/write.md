@@ -778,15 +778,15 @@ func main() {
 				},
 			},
 			DistanceMetric: turbopuffer.DistanceMetricCosineDistance,
-			Schema: map[string]turbopuffer.AttributeSchemaConfigParam{
-				"title_embedding": {
+			Schema: map[string]turbopuffer.AttributeSchemaParam{
+				"title_embedding": {AttributeSchemaConfig: &turbopuffer.AttributeSchemaConfigParam{
 					Type: "[3]f32",
 					Ann:  param.Override[turbopuffer.AttributeSchemaConfigAnnParam](true),
-				},
-				"image_embedding": {
+				}},
+				"image_embedding": {AttributeSchemaConfig: &turbopuffer.AttributeSchemaConfigParam{
 					Type: "[2]f16",
 					Ann:  param.Override[turbopuffer.AttributeSchemaConfigAnnParam](true),
-				},
+				}},
 			},
 		},
 	)
@@ -1565,15 +1565,15 @@ func main() {
 				},
 			},
 			DistanceMetric: turbopuffer.DistanceMetricCosineDistance,
-			Schema: map[string]turbopuffer.AttributeSchemaConfigParam{
-				"id": {Type: "uuid"},
-				"text": {
+			Schema: map[string]turbopuffer.AttributeSchemaParam{
+				"id": turbopuffer.AttributeSchemaParamAttributeSchemaConfig("uuid"),
+				"text": {AttributeSchemaConfig: &turbopuffer.AttributeSchemaConfigParam{
 					Type: "string",
 					// sets filterable: false, and enables FTS with default settings
 					FullTextSearch: &turbopuffer.FullTextSearchConfigParam{},
-				},
+				}},
 				// Otherwise inferred as slower/more expensive []string
-				"permissions": {Type: "[]uuid"},
+				"permissions": turbopuffer.AttributeSchemaParamAttributeSchemaConfig("[]uuid"),
 			},
 		},
 	)
